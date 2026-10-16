@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oxford 3000 Communication - 40 Topics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Tùy chỉnh thanh cuộn gọn đẹp */
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .word-chip:hover { background-color: #e0e7ff; color: #4338ca; transform: translateY(-1px); }
+        .speaking-card { border-color: #4f46e5 !important; background-color: #eef2ff !important; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 h-screen flex flex-col overflow-hidden select-none">
+
+    <!-- HEADER GỌN GÀNG -->
+    <header class="bg-indigo-700 text-white shadow-md py-3 px-4 shrink-0">
+        <div class="max-w-4xl mx-auto flex flex-wrap justify-between items-center gap-2">
+            <div class="flex items-center gap-2">
+                <span class="bg-amber-400 text-indigo-950 font-black px-2 py-0.5 rounded text-sm">OXFORD 3000</span>
+                <h1 class="text-base sm:text-lg font-bold tracking-tight">40 Topics Giao Tiếp Phản Xạ</h1>
+            </div>
+
+            <!-- Điều hướng Topic: Trước / Dropdown / Sau -->
+            <div class="flex items-center gap-1.5 w-full sm:w-auto">
+                <button onclick="prevTopic()" class="bg-indigo-800 hover:bg-indigo-600 px-2.5 py-1.5 rounded-lg text-xs font-bold transition" title="Topic trước">◀</button>
+                <select id="topicSelect" onchange="switchTopic(this.value)" class="flex-grow sm:w-72 bg-indigo-900 text-white text-xs sm:text-sm font-medium py-1.5 px-3 rounded-lg border border-indigo-500 focus:outline-none focus:ring-2 focus:ring-amber-400">
+                    <!-- Tự động nạp 40 Topic -->
+                </select>
+                <button onclick="nextTopic()" class="bg-indigo-800 hover:bg-indigo-600 px-2.5 py-1.5 rounded-lg text-xs font-bold transition" title="Topic tiếp theo">▶</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- THANH CÔNG CỤ ĐIỀU KHIỂN -->
+    <div class="bg-white border-b border-slate-200 py-2.5 px-4 shrink-0 shadow-xs">
+        <div class="max-w-4xl mx-auto flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+                <span id="topicBadge" class="bg-indigo-100 text-indigo-800 text-xs font-bold px-2.5 py-1 rounded-full">Topic 1/40</span>
+                <span id="sentenceCount" class="text-xs text-slate-500 font-medium">10 câu thoại</span>
+            </div>
+
+            <!-- Các nút chức năng -->
+            <div class="flex flex-wrap items-center gap-1.5">
+                <button onclick="playAllDialogues()" id="btnPlayAll" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition shadow-xs flex items-center gap-1">
+                    <span>▶ Nghe Tất Cả (0.8x)</span>
+                </button>
+                <button onclick="toggleState('chunk')" id="btnChunk" class="bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition">
+                    Cụm 3-4 từ: BẬT
+                </button>
+                <button onclick="toggleState('ipa')" id="btnIPA" class="bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition">
+                    IPA: BẬT
+                </button>
+                <button onclick="toggleState('vn')" id="btnVN" class="bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition">
+                    Nghĩa: BẬT
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- KHUNG NỘI DUNG CHÍNH (CUỘN GỌN TRONG KHUNG, KHÔNG TRẢI DÀI TRANG) -->
+    <main class="flex-grow max-w-4xl w-full mx-auto p-3 sm:p-4 overflow-hidden flex flex-col">
+        <!-- Hướng dẫn nhỏ -->
+        <div class="text-xs text-slate-500 mb-2 flex justify-between items-center px-1 shrink-0">
+            <span>💡 <b>Mẹo:</b> Bấm vào bất kỳ từ nào trong câu để xem Phiên âm IPA & Nghĩa tiếng Việt của riêng từ đó.</span>
+        </div>
+
+        <!-- Danh sách hội thoại cuộn độc lập -->
+        <div id="dialogueContainer" class="custom-scroll flex-grow overflow-y-auto space-y-2.5 pr-1 pb-16">
+            <!-- Các câu hội thoại render tại đây -->
+        </div>
+    </main>
+
+    <!-- POPUP TRA TỪ NHANH KHI BẤM VÀO CHỮ -->
+    <div id="wordPopup" class="fixed bottom-4 left-1/2 -translate-x-1/2 w-[92%] max-w-lg bg-slate-900 text-white p-3.5 rounded-2xl shadow-2xl border border-slate-700 transition-all duration-200 opacity-0 pointer-events-none translate-y-4 z-50">
+        <div class="flex justify-between items-center gap-3">
+            <div class="flex-grow">
+                <div class="flex items-baseline gap-2 flex-wrap">
+                    <span id="popupWord" class="text-lg font-extrabold text-amber-400 tracking-wide">Word</span>
+                    <span id="popupIpa" class="text-xs font-mono text-indigo-300 bg-slate-800 px-2 py-0.5 rounded">/ipa/</span>
+                    <span id="popupType" class="text-[11px] text-slate-400 italic">(loại từ)</span>
+                </div>
+                <p id="popupMeaning" class="text-sm text-slate-100 font-medium mt-1">Nghĩa tiếng Việt</p>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+                <button id="popupSpeakBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white p-2 rounded-xl text-xs font-bold transition">
+                    🔊 0.8x
+                </button>
+                <button onclick="closePopup()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-2 rounded-xl text-xs">✕</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- KHU VỰC DỮ LIỆU & LOGIC JAVASCRIPT -->
+    <!-- ========================================================================= -->
+    <script>
+        // =========================================================================
+        // 📌 PHẦN 1: KHO TỪ ĐIỂN OXFORD 3000 (Tự động tra nghĩa & IPA khi bấm vào chữ)
+        // Bạn chỉ cần dán bổ sung các từ mới vào bên dưới theo đúng mẫu:
+        // "từ_viết_thường": { ipa: "/.../", type: "loại từ", vn: "nghĩa" },
+        // =========================================================================
+        const wordBank = {
+            // --- Từ vựng Topic 1 & Topic 2 ---
+            "good": { ipa: "/ɡʊd/", type: "adj", vn: "tốt, đẹp, khỏe" },
+            "morning": { ipa: "/ˈmɔːrnɪŋ/", type: "n", vn: "buổi sáng" },
+            "is": { ipa: "/ɪz/", type: "v", vn: "thì, là, ở" },
+            "this": { ipa: "/ðɪs/", type: "det/pron", vn: "này, điều này, ghế này" },
+            "seat": { ipa: "/siːt/", type: "n", vn: "chỗ ngồi, ghế" },
+            "taken": { ipa: "/ˈteɪkən/", type: "adj/v", vn: "đã có người lấy/ngồi" },
+            "right": { ipa: "/raɪt/", type: "adv/adj", vn: "ngay, đúng, bên phải" },
+            "now": { ipa: "/naʊ/", type: "adv", vn: "bây giờ, hiện tại" },
+            "no": { ipa: "/noʊ/", type: "det/adv", vn: "không" },
+            "it": { ipa: "/ɪt/", type: "pron", vn: "nó" },
+            "completely": { ipa: "/kəmˈpliːtli/", type: "adv", vn: "hoàn toàn" },
+            "free": { ipa: "/friː/", type: "adj", vn: "trống, tự do, miễn phí" },
+            "please": { ipa: "/pliːz/", type: "excl/v", vn: "xin mời, làm ơn" },
+            "sit": { ipa: "/sɪt/", type: "v", vn: "ngồi" },
+            "down": { ipa: "/daʊn/", type: "adv/prep", vn: "xuống" },
+            "here": { ipa: "/hɪr/", type: "adv", vn: "ở đây" },
+            "thank": { ipa: "/θæŋk/", type: "v", vn: "cảm ơn" },
+            "you": { ipa: "/juː/", type: "pron", vn: "bạn, anh, chị" },
+            "so": { ipa: "/soʊ/", type: "adv/conj", vn: "rất, vì vậy" },
+            "much": { ipa: "/mʌtʃ/", type: "adv/det", vn: "nhiều" },
+            "by": { ipa: "/baɪ/", type: "prep", vn: "bởi, nhân tiện (by the way)" },
+            "the": { ipa: "/ðə/", type: "det", vn: "cái, con, người (xác định)" },
+            "way": { ipa: "/weɪ/", type: "n", vn: "đường, cách" },
+            "my": { ipa: "/maɪ/", type: "det", vn: "của tôi" },
+            "name": { ipa: "/neɪm/", type: "n", vn: "tên" },
+            "david": { ipa: "/ˈdeɪvɪd/", type: "n", vn: "tên riêng David" },
+            "nice": { ipa: "/naɪs/", type: "adj", vn: "vui vẻ, tốt đẹp" },
+            "to": { ipa: "/tuː/", type: "prep", vn: "để, đến" },
+            "meet": { ipa: "/miːt/", type: "v", vn: "gặp gỡ, làm quen" },
+            "i": { ipa: "/aɪ/", type: "pron", vn: "tôi, mình" },
+            "am": { ipa: "/æm/", type: "v", vn: "thì, là" },
+            "sarah": { ipa: "/ˈsɛrə/", type: "n", vn: "tên riêng Sarah" },
+            "are": { ipa: "/ɑːr/", type: "v", vn: "thì, là, đang" },
+            "waiting": { ipa: "/ˈweɪtɪŋ/", type: "v", vn: "đang chờ đợi" },
+            "for": { ipa: "/fɔːr/", type: "prep", vn: "cho, khoảng" },
+            "bus": { ipa: "/bʌs/", type: "n", vn: "xe buýt" },
+            "too": { ipa: "/tuː/", type: "adv", vn: "cũng vậy, quá" },
+            "yes": { ipa: "/jɛs/", type: "excl", vn: "đúng vậy, vâng" },
+            "go": { ipa: "/ɡoʊ/", type: "v", vn: "đi" },
+            "work": { ipa: "/wɜːrk/", type: "n/v", vn: "công việc, chỗ làm" },
+            "every": { ipa: "/ˈɛvri/", type: "det", vn: "mỗi, mọi" },
+            "single": { ipa: "/ˈsɪŋɡəl/", type: "adj", vn: "từng, đơn lẻ" },
+            "day": { ipa: "/deɪ/", type: "n", vn: "ngày" },
+            "what": { ipa: "/wʌt/", type: "pron/det", vn: "cái gì, gì" },
+            "do": { ipa: "/duː/", type: "v", vn: "làm (trợ động từ)" },
+            "living": { ipa: "/ˈlɪvɪŋ/", type: "n", vn: "kế sinh nhai, cuộc sống" },
+            "in": { ipa: "/ɪn/", type: "prep", vn: "ở, trong" },
+            "city": { ipa: "/ˈsɪti/", type: "n", vn: "thành phố" },
+            "as": { ipa: "/æz/", type: "prep/conj", vn: "như là, với tư cách là" },
+            "a": { ipa: "/ə/", type: "det", vn: "một" },
+            "graphic": { ipa: "/ˈɡræfɪk/", type: "adj", vn: "đồ họa" },
+            "designer": { ipa: "/dɪˈzaɪnər/", type: "n", vn: "nhà thiết kế" },
+            "small": { ipa: "/smɔːl/", type: "adj", vn: "nhỏ" },
+            "company": { ipa: "/ˈkʌmpəni/", type: "n", vn: "công ty" },
+            "that": { ipa: "/ðæt/", type: "det/pron", vn: "đó, điều đó" },
+            "sounds": { ipa: "/saʊndz/", type: "v", vn: "nghe có vẻ" },
+            "really": { ipa: "/ˈriːəli/", type: "adv", vn: "thực sự" },
+            "interesting": { ipa: "/ˈɪntrəstɪŋ/", type: "adj", vn: "thú vị" },
+            "and": { ipa: "/ænd/", type: "conj", vn: "và" },
+            "creative": { ipa: "/kriˈeɪtɪv/", type: "adj", vn: "sáng tạo" },
+            "love": { ipa: "/lʌv/", type: "v/n", vn: "yêu thích" },
+            "job": { ipa: "/dʒɑːb/", type: "n", vn: "công việc, nghề nghiệp" },
+            "how": { ipa: "/haʊ/", type: "adv", vn: "như thế nào, còn..." },
+            "about": { ipa: "/əˈbaʊt/", type: "prep", vn: "về, khoảng" },
+            "manage": { ipa: "/ˈmænɪdʒ/", type: "v", vn: "quản lý" },
+            "local": { ipa: "/ˈloʊkəl/", type: "adj", vn: "địa phương" },
+            "coffee": { ipa: "/ˈkɔːfi/", type: "n", vn: "cà phê" },
+            "shop": { ipa: "/ʃɑːp/", type: "n", vn: "cửa hàng, quán" },
+            "near": { ipa: "/nɪr/", type: "prep", vn: "gần" },
+            "central": { ipa: "/ˈsɛntrəl/", type: "adj", vn: "trung tâm" },
+            "park": { ipa: "/pɑːrk/", type: "n", vn: "công viên" },
+            "oh": { ipa: "/oʊ/", type: "excl", vn: "ồ" },
+            "drink": { ipa: "/drɪŋk/", type: "v/n", vn: "uống, đồ uống" },
+            "every": { ipa: "/ˈɛvri/", type: "det", vn: "mỗi" },
+            "should": { ipa: "/ʃʊd/", type: "modal", vn: "nên" },
+            "visit": { ipa: "/ˈvɪzɪt/", type: "v/n", vn: "ghé thăm" },
+            "your": { ipa: "/jʊr/", type: "det", vn: "của bạn" },
+            "soon": { ipa: "/suːn/", type: "adv", vn: "sớm" },
+            "sure": { ipa: "/ʃʊr/", type: "adj/adv", vn: "chắc chắn rồi" },
+            "here": { ipa: "/hɪr/", type: "adv", vn: "đây, ở đây" },
+            "comes": { ipa: "/kʌmz/", type: "v", vn: "đến" },
+            "our": { ipa: "/ɑːr/", type: "det", vn: "của chúng ta" },
+            "let": { ipa: "/lɛt/", type: "v", vn: "hãy để" },
+            "us": { ipa: "/ʌs/", type: "pron", vn: "chúng ta" },
+            "get": { ipa: "/ɡɛt/", type: "v", vn: "lên (xe), lấy, nhận" },
+            "on": { ipa: "/ɑːn/", type: "prep", vn: "trên, lên" },
+            "together": { ipa: "/təˈɡɛðər/", type: "adv", vn: "cùng nhau" },
+            "excuse": { ipa: "/ɪkˈskjuːz/", type: "v", vn: "xin lỗi (khi làm phiền)" },
+            "me": { ipa: "/miː/", type: "pron", vn: "tôi" },
+            "can": { ipa: "/kæn/", type: "modal", vn: "có thể" },
+            "help": { ipa: "/hɛlp/", type: "v/n", vn: "giúp đỡ" },
+            "for": { ipa: "/fɔːr/", type: "prep", vn: "trong, cho" },
+            "moment": { ipa: "/ˈmoʊmənt/", type: "n", vn: "một lát, khoảnh khắc" },
+            "of": { ipa: "/ʌv/", type: "prep", vn: "của" },
+            "course": { ipa: "/kɔːrs/", type: "n", vn: "dĩ nhiên (of course)" },
+            "looking": { ipa: "/ˈlʊkɪŋ/", type: "v", vn: "đang tìm kiếm (looking for)" },
+            "trying": { ipa: "/ˈtraɪɪŋ/", type: "v", vn: "đang cố gắng" },
+            "find": { ipa: "/faɪnd/", type: "v", vn: "tìm thấy" },
+            "nearest": { ipa: "/ˈnɪrɪst/", type: "adj", vn: "gần nhất" },
+            "train": { ipa: "/treɪn/", type: "n", vn: "tàu hỏa" },
+            "station": { ipa: "/ˈsteɪʃən/", type: "n", vn: "nhà ga, trạm" },
+            "actually": { ipa: "/ˈæktʃuəli/", type: "adv", vn: "thực ra" },
+            "not": { ipa: "/nɑːt/", type: "adv", vn: "không" },
+            "very": { ipa: "/ˈvɛri/", type: "adv", vn: "rất" },
+            "far": { ipa: "/fɑːr/", type: "adv/adj", vn: "xa" },
+            "from": { ipa: "/frʌm/", type: "prep", vn: "từ" },
+            "street": { ipa: "/striːt/", type: "n", vn: "con đường, phố" },
+            "walk": { ipa: "/wɔːk/", type: "v/n", vn: "đi bộ" },
+            "there": { ipa: "/ðɛr/", type: "adv", vn: "đến đó, ở đó" },
+            "or": { ipa: "/ɔːr/", type: "conj", vn: "hoặc" },
+            "take": { ipa: "/teɪk/", type: "v", vn: "bắt (xe), lấy" },
+            "taxi": { ipa: "/ˈtæksi/", type: "n", vn: "xe taxi" },
+            "easily": { ipa: "/ˈiːzəli/", type: "adv", vn: "một cách dễ dàng" },
+            "only": { ipa: "/ˈoʊnli/", type: "adv/adj", vn: "chỉ" },
+            "takes": { ipa: "/teɪks/", type: "v", vn: "mất (thời gian)" },
+            "ten": { ipa: "/tɛn/", type: "num", vn: "mười (10)" },
+            "minutes": { ipa: "/ˈmɪnɪts/", type: "n", vn: "phút" },
+            "which": { ipa: "/wɪtʃ/", type: "det/pron", vn: "hướng nào, cái nào" },
+            "direction": { ipa: "/dəˈrɛkʃən/", type: "n", vn: "phương hướng" },
+            "start": { ipa: "/stɑːrt/", type: "v/n", vn: "bắt đầu" },
+            "walking": { ipa: "/ˈwɔːkɪŋ/", type: "v/n", vn: "việc đi bộ" },
+            "straight": { ipa: "/streɪt/", type: "adv/adj", vn: "thẳng" },
+            "ahead": { ipa: "/əˈhɛd/", type: "adv", vn: "phía trước" },
+            "until": { ipa: "/ənˈtɪl/", type: "conj/prep", vn: "cho đến khi" },
+            "see": { ipa: "/siː/", type: "v", vn: "nhìn thấy" },
+            "traffic": { ipa: "/ˈtræfɪk/", type: "n", vn: "giao thông" },
+            "lights": { ipa: "/laɪts/", type: "n", vn: "đèn (đèn giao thông)" },
+            "okay": { ipa: "/oʊˈkeɪ/", type: "excl/adj", vn: "được rồi, ổn" },
+            "then": { ipa: "/ðɛn/", type: "adv", vn: "sau đó" },
+            "where": { ipa: "/wɛr/", type: "adv", vn: "ở đâu" },
+            "turn": { ipa: "/tɜːrn/", type: "v/n", vn: "rẽ, quay" },
+            "after": { ipa: "/ˈæftər/", type: "prep/conj", vn: "sau khi" },
+            "left": { ipa: "/lɛft/", type: "adv/adj", vn: "bên trái" },
+            "into": { ipa: "/ˈɪntuː/", type: "prep", vn: "vào trong" },
+            "main": { ipa: "/meɪn/", type: "adj", vn: "chính" },
+            "road": { ipa: "/roʊd/", type: "n", vn: "con đường" },
+            "keep": { ipa: "/kiːp/", type: "v", vn: "tiếp tục, giữ" },
+            "going": { ipa: "/ˈɡoʊɪŋ/", type: "v", vn: "đi" },
+            "will": { ipa: "/wɪl/", type: "modal", vn: "sẽ" },
+            "big": { ipa: "/bɪɡ/", type: "adj", vn: "to, lớn" },
+            "supermarket": { ipa: "/ˈsuːpərmɑːrkɪt/", type: "n", vn: "siêu thị" },
+            "opposite": { ipa: "/ˈɑːpəzɪt/", type: "prep", vn: "đối diện" },
+            "great": { ipa: "/ɡreɪt/", type: "adj", vn: "tuyệt vời" },
+            "clear": { ipa: "/klɪr/", type: "adj", vn: "rõ ràng" },
+            "appreciate": { ipa: "/əˈpriːʃieɪt/", type: "v", vn: "trân trọng, cảm kích" },
+            "kind": { ipa: "/kaɪnd/", type: "adj", vn: "tử tế, tốt bụng" }
+            // 👉 DÒNG DÁN TỪ VỰNG MỚI: Khi thêm Topic mới, nếu có từ vựng bổ sung, bạn dán nối tiếp vào ngay trên dòng này!
+        };
+
+        // =========================================================================
+        // 📌 PHẦN 2: DỮ LIỆU 40 TOPIC HỘI THOẠI (ĐẦY ĐẶN 10-12 CÂU / TOPIC)
+        // Mỗi câu đều có:
+        // - text: Câu tiếng Anh nguyên bản (để máy đọc và tách từ click)
+        // - chunks: Chia cụm 3-4 từ kèm nghĩa sát từng cụm
+        // - ipa: Phiên âm cả câu
+        // - vn: Dịch nghĩa tự nhiên cả câu
+        // =========================================================================
+        const topicsData = [
+            {
+                id: 1,
+                title: "Topic 1: Làm quen tại trạm xe buýt (Meeting at the Bus Stop)",
+                dialogues: [
+                    {
+                        speaker: "A",
+                        text: "Good morning! Is this seat taken right now?",
+                        chunks: "Good morning! (Chào buổi sáng) | Is this seat taken (chỗ ngồi này có ai ngồi chưa) | right now? (ngay bây giờ)",
+                        ipa: "/ɡʊd ˈmɔːrnɪŋ | ɪz ðɪs siːt ˈteɪkən | raɪt naʊ/",
+                        vn: "Chào buổi sáng! Chỗ ngồi này hiện có ai ngồi chưa ạ?"
+                    },
+                    {
+                        speaker: "B",
+                        text: "No, it is completely free. Please sit down here.",
+                        chunks: "No, it is (Không, nó thì) | completely free. (hoàn toàn trống) | Please sit down here. (Xin mời ngồi xuống đây)",
+                        ipa: "/noʊ ɪt ɪz | kəmˈpliːtli friː | pliːz sɪt daʊn hɪr/",
+                        vn: "Chưa đâu, chỗ này hoàn toàn trống. Bạn cứ ngồi xuống đây nhé."
+                    },
+                    {
+                        speaker: "A",
+                        text: "Thank you so much. By the way, my name is David.",
+                        chunks: "Thank you so much. (Cảm ơn bạn rất nhiều) | By the way, (Nhân tiện thì) | my name is David. (tên tôi là David)",
+                        ipa: "/θæŋk juː soʊ mʌtʃ | baɪ ðə weɪ | maɪ neɪm ɪz ˈdeɪvɪd/",
+                        vn: "Cảm ơn bạn rất nhiều. Nhân tiện, mình tên là David."
+                    },
+                    {
+                        speaker: "B",
+                        text: "Nice to meet you, David. I am Sarah.",
+                        chunks: "Nice to meet you, (Rất vui được gặp bạn) | David. I am Sarah. (David. Mình là Sarah)",
+                        ipa: "/naɪs tuː miːt juː | ˈdeɪvɪd aɪ æm ˈsɛrə/",
+                        vn: "Rất vui được làm quen với bạn, David. Mình là Sarah."
+                    },
+                    {
+                        speaker: "A",
+                        text: "Are you waiting for the bus to work too?",
+                        chunks: "Are you waiting (Bạn có đang đợi) | for the bus (xe buýt) | to work too? (đi làm giống mình không)",
+                        ipa: "/ɑːr juː ˈweɪtɪŋ | fɔːr ðə bʌs | tuː wɜːrk tuː/",
+                        vn: "Bạn cũng đang đợi xe buýt để đi làm hả?"
+                    },
+                    {
+                        speaker: "B",
+                        text: "Yes, I go to work by bus every single day.",
+                        chunks: "Yes, I go to work (Vâng, mình đi làm) | by bus (bằng xe buýt) | every single day. (mỗi ngày)",
+                        ipa: "/jɛs aɪ ɡoʊ tuː wɜːrk | baɪ bʌs | ˈɛvri ˈsɪŋɡəl deɪ/",
+                        vn: "Đúng rồi, ngày nào mình cũng đi làm bằng xe buýt cả."
+                    },
+                    {
+                        speaker: "A",
+                        text: "What do you do for a living in this city?",
+                        chunks: "What do you do (Bạn làm nghề gì) | for a living (để kiếm sống) | in this city? (ở thành phố này)",
+                        ipa: "/wʌt duː juː duː | fɔːr ə ˈlɪvɪŋ | ɪn ðɪs ˈsɪti/",
+                        vn: "Bạn đang làm công việc gì ở thành phố này thế?"
+                    },
+                    {
+                        speaker: "B",
+                        text: "I work as a graphic designer for a small company.",
+                        chunks: "I work as (Mình làm việc như là) | a graphic designer (một nhà thiết kế đồ họa) | for a small company. (cho một công ty nhỏ)",
+                        ipa: "/aɪ wɜːrk æz | ə ˈɡræfɪk dɪˈzaɪnər | fɔːr ə smɔːl ˈkʌmpəni/",
+                        vn: "Mình làm thiết kế đồ họa cho một công ty nhỏ."
+                    },
+                    {
+                        speaker: "A",
+                        text: "That sounds really interesting and creative. How about you?",
+                        chunks: "That sounds really interesting (Nghe thực sự thú vị) | and creative. (và sáng tạo) | How about you? (Còn bạn thì sao)",
+                        ipa: "/ðæt saʊndz ˈriːəli ˈɪntrəstɪŋ | ænd kriˈeɪtɪv | haʊ əˈbaʊt juː/",
+                        vn: "Nghe thực sự thú vị và sáng tạo đấy. Thế còn bạn?"
+                    },
+                    {
+                        speaker: "A",
+                        text: "I manage a local coffee shop near the central park.",
+                        chunks: "I manage (Mình quản lý) | a local coffee shop (một quán cà phê địa phương) | near the central park. (gần công viên trung tâm)",
+                        ipa: "/aɪ ˈmænɪdʒ | ə ˈloʊkəl ˈkɔːfi ʃɑːp | nɪr ðə ˈsɛntrəl pɑːrk/",
+                        vn: "Mình quản lý một quán cà phê nhỏ gần công viên trung tâm."
+                    },
+                    {
+                        speaker: "B",
+                        text: "Oh, I love coffee! I should visit your shop soon.",
+                        chunks: "Oh, I love coffee! (Ồ, mình mê cà phê lắm) | I should visit (Mình nên ghé thăm) | your shop soon. (quán của bạn sớm thôi)",
+                        ipa: "/oʊ aɪ lʌv ˈkɔːfi | aɪ ʃʊd ˈvɪzɪt | jʊr ʃɑːp suːn/",
+                        vn: "Ồ, mình mê cà phê lắm! Mình nhất định sẽ ghé quán bạn sớm."
+                    },
+                    {
+                        speaker: "A",
+                        text: "Sure! Here comes our bus. Let us get on together.",
+                        chunks: "Sure! Here comes (Chắc chắn rồi! Đang tới kìa) | our bus. (xe buýt của chúng ta) | Let us get on together. (Hãy cùng lên xe nào)",
+                        ipa: "/ʃʊr hɪr kʌmz | ɑːr bʌs | lɛt ʌs ɡɛt ɑːn təˈɡɛðər/",
+                        vn: "Chắc chắn rồi! Xe buýt của chúng ta tới kìa. Cùng lên xe thôi."
+                    }
+                ]
+            },
+            {
+                id: 2,
+                title: "Topic 2: Hỏi đường đi đến nhà ga (Asking for Directions)",
+                dialogues: [
+                    {
+                        speaker: "A",
+                        text: "Excuse me, can you help me for a moment?",
+                        chunks: "Excuse me, (Xin lỗi) | can you help me (bạn có thể giúp tôi) | for a moment? (một chút được không)",
+                        ipa: "/ɪkˈskjuːz miː | kæn juː hɛlp miː | fɔːr ə ˈmoʊmənt/",
+                        vn: "Xin lỗi, bạn có thể giúp mình một lát được không?"
+                    },
+                    {
+                        speaker: "B",
+                        text: "Of course! What are you looking for right now?",
+                        chunks: "Of course! (Dĩ nhiên rồi) | What are you (Bạn đang) | looking for right now? (tìm kiếm gì ngay lúc này)",
+                        ipa: "/ʌv kɔːrs | wʌt ɑːr juː | ˈlʊkɪŋ fɔːr raɪt naʊ/",
+                        vn: "Tất nhiên rồi! Hiện tại bạn đang tìm chỗ nào thế?"
+                    },
+                    {
+                        speaker: "A",
+                        text: "I am trying to find the nearest train station.",
+                        chunks: "I am trying (Mình đang cố gắng) | to find (tìm kiếm) | the nearest train station. (nhà ga tàu hỏa gần nhất)",
+                        ipa: "/aɪ æm ˈtraɪɪŋ | tuː faɪnd | ðə ˈnɪrɪst treɪn ˈsteɪʃən/",
+                        vn: "Mình đang cố tìm nhà ga tàu hỏa gần đây nhất."
+                    },
+                    {
+                        speaker: "B",
+                        text: "It is actually not very far from this street.",
+                        chunks: "It is actually (Thực ra nó) | not very far (không quá xa) | from this street. (từ con phố này)",
+                        ipa: "/ɪt ɪz ˈæktʃuəli | nɑːt ˈvɛri fɑːr | frʌm ðɪs striːt/",
+                        vn: "Thực ra từ con phố này đến đó không xa lắm đâu."
+                    },
+                    {
+                        speaker: "A",
+                        text: "Should I walk there or take a taxi?",
+                        chunks: "Should I walk there (Mình nên đi bộ đến đó) | or take a taxi? (hay là bắt một chiếc taxi)",
+                        ipa: "/ʃʊd aɪ wɔːk ðɛr | ɔːr teɪk ə ˈtæksi/",
+                        vn: "Mình nên đi bộ tới đó hay là bắt taxi nhỉ?"
+                    },
+                    {
+                        speaker: "B",
+                        text: "You can walk easily. It only takes ten minutes.",
+                        chunks: "You can walk easily. (Bạn có thể đi bộ dễ dàng) | It only takes (Nó chỉ mất) | ten minutes. (mười phút thôi)",
+                        ipa: "/juː kæn wɔːk ˈiːzəli | ɪt ˈoʊnli teɪks | tɛn ˈmɪnɪts/",
+                        vn: "Bạn đi bộ thoải mái nhé. Chỉ mất khoảng mười phút thôi."
+                    },
+                    {
+                        speaker: "A",
+                        text: "Which direction should I start walking from here?",
+                        chunks: "Which direction (Hướng nào) | should I start walking (mình nên bắt đầu đi bộ) | from here? (từ đây)",
+                        ipa: "/wɪtʃ dəˈrɛkʃən | ʃʊd aɪ stɑːrt ˈwɔːkɪŋ | frʌm hɪr/",
+                        vn: "Từ đây thì mình nên bắt đầu đi bộ theo hướng nào?"
+                    },
+                    {
+                        speaker: "B",
+                        text: "Go straight ahead until you see the traffic lights.",
+                        chunks: "Go straight ahead (Đi thẳng về phía trước) | until you see (cho đến khi bạn thấy) | the traffic lights. (đèn giao thông)",
+                        ipa: "/ɡoʊ streɪt əˈhɛd | ənˈtɪl juː siː | ðə ˈtræfɪk laɪts/",
+                        vn: "Bạn cứ đi thẳng phía trước cho đến khi nhìn thấy đèn giao thông."
+                    },
+                    {
+                        speaker: "A",
+                        text: "Okay, and then where do I turn after that?",
+                        chunks: "Okay, and then (Được rồi, và sau đó) | where do I turn (mình rẽ đi đâu) | after that? (sau điểm đó)",
+                        ipa: "/oʊˈkeɪ ænd ðɛn | wɛr duː aɪ tɜːrn | ˈæftər ðæt/",
+                        vn: "Ok, rồi qua chỗ đó thì mình rẽ hướng nào nữa?"
+                    },
+                    {
+                        speaker: "B",
+                        text: "Turn left into the main road and keep going.",
+                        chunks: "Turn left (Rẽ trái) | into the main road (vào đường chính) | and keep going. (và tiếp tục đi tới)",
+                        ipa: "/tɜːrn lɛft | ˈɪntuː ðə meɪn roʊd | ænd kiːp ˈɡoʊɪŋ/",
+                        vn: "Bạn rẽ trái vào trục đường chính rồi cứ đi thẳng tiếp."
+                    },
+                    {
+                        speaker: "B",
+                        text: "You will see the station opposite a big supermarket.",
+                        chunks: "You will see (Bạn sẽ nhìn thấy) | the station (nhà ga) | opposite a big supermarket. (đối diện một siêu thị lớn)",
+                        ipa: "/juː wɪl siː | ðə ˈsteɪʃən | ˈɑːpəzɪt ə bɪɡ ˈsuːpərmɑːrkɪt/",
+                        vn: "Bạn sẽ thấy nhà ga nằm ngay đối diện một siêu thị lớn."
+                    },
+                    {
+                        speaker: "A",
+                        text: "Great! That is very clear. I appreciate your kind help.",
+                        chunks: "Great! That is very clear. (Tuyệt! Rất rõ ràng) | I appreciate (Mình rất cảm kích) | your kind help. (sự giúp đỡ tử tế của bạn)",
+                        ipa: "/ɡreɪt ðæt ɪz ˈvɛri klɪr | aɪ əˈpriːʃieɪt | jʊr kaɪnd hɛlp/",
+                        vn: "Tuyệt vời! Chỉ dẫn rất rõ ràng. Cảm ơn sự giúp đỡ nhiệt tình của bạn nhé."
+                    }
+                ]
+            }
+            // 👉 DÒNG DÁN TOPIC MỚI: Khi nhận các Topic tiếp theo (3 -> 40), bạn chỉ cần thêm dấu phẩy (,) sau dấu ngoặc nhọn đóng '}' ở dòng ngay trên, rồi dán khối Topic mới vào đây!
+        ];
+
+        // =========================================================================
+        // PHẦN 3: HỆ THỐNG XỬ LÝ GIAO DIỆN & ÂM THANH (KHÔNG CẦN CHỈNH SỬA)
+        // =========================================================================
+        let currentTopicIndex = 0;
+        let showChunk = true;
+        let showIPA = true;
+        let showVN = true;
+        let isPlayingAll = false;
+
+        window.onload = function() {
+            renderDropdown();
+            loadTopicByIndex(0);
+        };
+
+        function renderDropdown() {
+            const select = document.getElementById('topicSelect');
+            select.innerHTML = '';
+            topicsData.forEach((topic, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx;
+                opt.textContent = topic.title;
+                select.appendChild(opt);
+            });
+        }
+
+        function switchTopic(index) {
+            stopSpeech();
+            currentTopicIndex = parseInt(index);
+            loadTopicByIndex(currentTopicIndex);
+        }
+
+        function prevTopic() {
+            if (currentTopicIndex > 0) {
+                switchTopic(currentTopicIndex - 1);
+                document.getElementById('topicSelect').value = currentTopicIndex;
+            }
+        }
+
+        function nextTopic() {
+            if (currentTopicIndex < topicsData.length - 1) {
+                switchTopic(currentTopicIndex + 1);
+                document.getElementById('topicSelect').value = currentTopicIndex;
+            }
+        }
+
+        // Tách mọi từ trong câu thành nút bấm tra từ tự động
+        function buildClickableSentence(sentence) {
+            const tokens = sentence.split(' ');
+            return tokens.map(token => {
+                // Lọc bỏ dấu câu để tra trong wordBank
+                const cleanWord = token.replace(/[^a-zA-Z']/g, "").toLowerCase();
+                const safeToken = token.replace(/'/g, "\\'");
+                return `<span onclick="inspectWord('${cleanWord}', '${safeToken}')" class="word-chip cursor-pointer px-1 py-0.5 rounded transition inline-block">${token}</span>`;
+            }).join(' ');
+        }
+
+        function loadTopicByIndex(idx) {
+            const topic = topicsData[idx];
+            if (!topic) return;
+
+            document.getElementById('topicBadge').textContent = `Topic ${topic.id} / 40`;
+            document.getElementById('sentenceCount').textContent = `${topic.dialogues.length} câu thoại`;
+
+            const container = document.getElementById('dialogueContainer');
+            container.innerHTML = '';
+
+            topic.dialogues.forEach((line, lineIdx) => {
+                const isSpeakerA = line.speaker === "A";
+                const card = document.createElement('div');
+                card.id = `dialogue-card-${lineIdx}`;
+                card.className = `bg-white rounded-xl p-3.5 shadow-xs border ${isSpeakerA ? 'border-slate-200' : 'border-indigo-100 bg-indigo-50/20'} transition duration-200`;
+
+                const clickableSentence = buildClickableSentence(line.text);
+                const safeTextForSpeech = line.text.replace(/'/g, "\\'");
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-center gap-2 mb-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-extrabold ${isSpeakerA ? 'bg-indigo-600 text-white' : 'bg-amber-500 text-slate-950'}">
+                                ${line.speaker}
+                            </span>
+                            <span class="text-xs font-semibold text-slate-400">Câu #${lineIdx + 1}</span>
+                        </div>
+                        <button onclick="speakSingle('${safeTextForSpeech}', ${lineIdx})" class="bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 text-xs font-bold px-2.5 py-1 rounded-lg border border-indigo-200 transition flex items-center gap-1">
+                            🔊 0.8x
+                        </button>
+                    </div>
+
+                    <!-- Câu tiếng Anh bấm được từng chữ -->
+                    <div class="text-base sm:text-lg font-bold text-slate-800 leading-snug tracking-tight mb-1.5">
+                        ${clickableSentence}
+                    </div>
+
+                    <!-- Phân tách cụm 3-4 từ (Chunking) -->
+                    <div class="chunk-row text-xs bg-amber-50 text-amber-900 border border-amber-200/70 px-2.5 py-1.5 rounded-lg mb-1 font-medium ${showChunk ? '' : 'hidden'}">
+                        🧩 ${line.chunks}
+                    </div>
+
+                    <!-- Phiên âm IPA -->
+                    <div class="ipa-row text-xs font-mono text-indigo-600 mb-1 ${showIPA ? '' : 'hidden'}">
+                        ${line.ipa}
+                    </div>
+
+                    <!-- Nghĩa Tiếng Việt -->
+                    <div class="vn-row text-sm text-slate-600 font-medium ${showVN ? '' : 'hidden'}">
+                        💬 ${line.vn}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            container.scrollTop = 0;
+        }
+
+        // Bấm vào 1 từ bất kỳ trong câu để xem IPA + Nghĩa
+        function inspectWord(cleanKey, rawDisplayWord) {
+            const info = wordBank[cleanKey];
+            const popup = document.getElementById('wordPopup');
+
+            document.getElementById('popupWord').textContent = rawDisplayWord.replace(/[.,?!]/g, "");
+            if (info) {
+                document.getElementById('popupIpa').textContent = info.ipa;
+                document.getElementById('popupType').textContent = `(${info.type})`;
+                document.getElementById('popupMeaning').textContent = info.vn;
+            } else {
+                document.getElementById('popupIpa').textContent = `/${cleanKey}/`;
+                document.getElementById('popupType').textContent = `(từ vựng)`;
+                document.getElementById('popupMeaning').textContent = "Đang cập nhật trong kho từ điển...";
+            }
+
+            // Gán sự kiện đọc riêng từ đó với tốc độ 0.8
+            const speakBtn = document.getElementById('popupSpeakBtn');
+            speakBtn.onclick = function() {
+                speakWordOnly(cleanKey);
+            };
+
+            popup.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4');
+            speakWordOnly(cleanKey); // Tự phát âm từ đó khi bấm vào
+        }
+
+        function closePopup() {
+            const popup = document.getElementById('wordPopup');
+            popup.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
+        }
+
+        // Đọc 1 từ đơn
+        function speakWordOnly(word) {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(word);
+            u.lang = 'en-US';
+            u.rate = 0.8;
+            window.speechSynthesis.speak(u);
+        }
+
+        // Đọc 1 câu thoại với hiệu ứng sáng khung
+        function speakSingle(text, cardIdx) {
+            stopSpeech();
+            highlightCard(cardIdx);
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'en-US';
+            u.rate = 0.8;
+            u.onend = () => clearHighlight();
+            window.speechSynthesis.speak(u);
+        }
+
+        // Nghe liên tục toàn bộ hội thoại trong Topic
+        function playAllDialogues() {
+            if (isPlayingAll) {
+                stopSpeech();
+                return;
+            }
+            const topic = topicsData[currentTopicIndex];
+            if (!topic) return;
+
+            isPlayingAll = true;
+            const btn = document.getElementById('btnPlayAll');
+            btn.innerHTML = `<span>⏹ Dừng Nghe</span>`;
+            btn.classList.replace('bg-emerald-600', 'bg-rose-600');
+
+            let idx = 0;
+            function playNext() {
+                if (!isPlayingAll || idx >= topic.dialogues.length) {
+                    stopSpeech();
+                    return;
+                }
+                highlightCard(idx);
+                const cardEl = document.getElementById(`dialogue-card-${idx}`);
+                if (cardEl) cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+                const u = new SpeechSynthesisUtterance(topic.dialogues[idx].text);
+                u.lang = 'en-US';
+                u.rate = 0.8;
+                u.onend = () => {
+                    idx++;
+                    setTimeout(playNext, 400);
+                };
+                window.speechSynthesis.speak(u);
+            }
+            playNext();
+        }
+
+        function stopSpeech() {
+            isPlayingAll = false;
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            clearHighlight();
+            const btn = document.getElementById('btnPlayAll');
+            if (btn) {
+                btn.innerHTML = `<span>▶ Nghe Tất Cả (0.8x)</span>`;
+                btn.classList.replace('bg-rose-600', 'bg-emerald-600');
+            }
+        }
+
+        function highlightCard(idx) {
+            clearHighlight();
+            const card = document.getElementById(`dialogue-card-${idx}`);
+            if (card) card.classList.add('speaking-card');
+        }
+
+        function clearHighlight() {
+            document.querySelectorAll('[id^="dialogue-card-"]').forEach(el => {
+                el.classList.remove('speaking-card');
+            });
+        }
+
+        // Bật / Tắt hiển thị Cụm từ, IPA, Nghĩa Tiếng Việt
+        function toggleState(type) {
+            if (type === 'chunk') {
+                showChunk = !showChunk;
+                updateToggleUI('btnChunk', 'Cụm 3-4 từ', showChunk, '.chunk-row');
+            } else if (type === 'ipa') {
+                showIPA = !showIPA;
+                updateToggleUI('btnIPA', 'IPA', showIPA, '.ipa-row');
+            } else if (type === 'vn') {
+                showVN = !showVN;
+                updateToggleUI('btnVN', 'Nghĩa', showVN, '.vn-row');
+            }
+        }
+
+        function updateToggleUI(btnId, label, state, selector) {
+            const btn = document.getElementById(btnId);
+            btn.textContent = `${label}: ${state ? 'BẬT' : 'TẮT'}`;
+            btn.className = state 
+                ? "bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition"
+                : "bg-slate-200 text-slate-600 border border-slate-300 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition";
+            
+            document.querySelectorAll(selector).forEach(el => {
+                if (state) el.classList.remove('hidden');
+                else el.classList.add('hidden');
+            });
+        }
+    </script>
+</body>
+</html>
